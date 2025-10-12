@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+<!-- Highlight.js CSS -->
+
+<link id="hljs-theme" rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+
+<body class="bg-gray-100 min-h-screen font-sans">
+<!-- Fixed Theme Button -->
+<div class="fixed top-4 right-4 z-50">
+  <!-- Main Button -->
+  <button id="themeBtn" 
+          class="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors shadow-lg">
+    Theme
+  </button>
+
+  <!-- Popup Buttons -->
+  <div id="themePopup" class="hidden mt-2 flex flex-wrap gap-2 p-2 bg-white shadow-lg rounded-lg w-48">
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#f5f5f5; border:1px solid #ccc;" data-theme="github"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#0d1117; border:1px solid #333;" data-theme="github-dark"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#282c34;" data-theme="atom-one-dark"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#fafafa; border:1px solid #ccc;" data-theme="atom-one-light"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#272822;" data-theme="monokai"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#282a36;" data-theme="dracula"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#002b36;" data-theme="solarized-dark"></button>
+    <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#fdf6e3; border:1px solid #ccc;" data-theme="solarized-light"></button>
+  </div>
+</div>
+
+
+
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8"><%= exam.title %></h1>
+
+    <!-- Start Form -->
+    <form id="startForm" class="bg-white shadow-md rounded-lg p-6 space-y-4">
+      <input id="name" name="name" placeholder="Name" required 
+             class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+      <input id="roll" name="roll" placeholder="Roll No" required
+             class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+      <button type="submit" 
+              class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+        Start Exam
+      </button>
+    </form>
+
+    <!-- Exam Container (Initially Hidden) -->
+    <div id="examContainer" class="mt-8" style="display:none">
+      <div id="statusBar" class="mb-4 text-gray-700 font-medium">
+        Time left: <span id="timeLeft"></span> | Warnings: <span id="warnings">0</span>
+      </div>
+      <div id="questions" class="space-y-6"></div>
+      <button id="submitBtn" 
+              class="mt-6 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors">
+        Submit
+      </button>
+    </div>
+  </div>
+
+  <script>
+
+
+
+    const exam = <%- JSON.stringify(exam) %>;
+    const questions = <%- JSON.stringify(questions) %>;
+  </script>
+  <script src="/exam-client.js"></script>
+
+
+
+
+  <!-- Highlight.js JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<!-- (Optional) Load specific language support, e.g. C -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+  <%- include('../partials/nav') %>
+
+  <div class="max-w-lg mx-auto mt-16 bg-white shadow-md rounded-lg p-8">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Create New Exam</h1>
+
+    <form method="post" action="/admin/exams" class="space-y-5">
+      <div>
+        <label class="block text-gray-700 mb-2 font-medium">Exam Title</label>
+        <input 
+          name="title" 
+          placeholder="Enter exam title" 
+          required 
+          class="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label class="block text-gray-700 mb-2 font-medium">Duration (in minutes)</label>
+        <input 
+          type="number" 
+          name="duration" 
+          placeholder="Enter duration" 
+          required 
+          class="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div class="text-center">
+        <button 
+          type="submit" 
+          class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Create Exam
+        </button>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>
