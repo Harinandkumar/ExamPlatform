@@ -2,20 +2,20 @@
 <html lang="en">
 <%- include('../partials/head') %>
 <!-- Highlight.js CSS -->
-
 <link id="hljs-theme" rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 
 <body class="bg-gray-100 min-h-screen font-sans">
+
 <!-- Fixed Theme Button -->
-<div class="fixed top-4 right-4 z-50">
-  <!-- Main Button -->
+<div class="fixed top-4 right-4 z-50 flex flex-col gap-2">
+  <!-- Theme Main Button -->
   <button id="themeBtn" 
           class="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors shadow-lg">
     Theme
   </button>
 
-  <!-- Popup Buttons -->
+  <!-- Theme Popup Buttons -->
   <div id="themePopup" class="hidden mt-2 flex flex-wrap gap-2 p-2 bg-white shadow-lg rounded-lg w-48">
     <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#f5f5f5; border:1px solid #ccc;" data-theme="github"></button>
     <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#0d1117; border:1px solid #333;" data-theme="github-dark"></button>
@@ -26,53 +26,184 @@
     <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#002b36;" data-theme="solarized-dark"></button>
     <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#fdf6e3; border:1px solid #ccc;" data-theme="solarized-light"></button>
   </div>
+
+  <!-- Instructions Button -->
+  <button id="instrBtn" 
+          class="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition-colors shadow-lg mt-2">
+    Instructions
+  </button>
+
+  <!-- Instructions Popup -->
+  <!-- Instructions Popup (Template) -->
+<div id="instrPopup" class="hidden mt-2 p-4 w-96 bg-white shadow-lg rounded-lg text-gray-800 max-h-96 overflow-y-auto">
+  <h3 class="font-bold text-lg mb-2">Instructions for <%= exam.title %></h3>
+  <ul class="list-decimal list-inside space-y-1 text-sm">
+    <li>Exam Duration: <%= exam.duration %> minutes</li>
+    <li>Total Questions: <%= questions.length %></li>
+    <li>Read each question carefully before answering.</li>
+    <li>Each question carries equal marks unless specified.</li>
+    <li>Do not refresh, close, or navigate away from the browser; progress will be lost.</li>
+    <li>Stay in fullscreen; leaving fullscreen triggers a warning. 3 warnings will auto-submit the exam.</li>
+    <li>Use only one browser tab/window for the exam.</li>
+    <li>Manage your time wisely; exam will auto-submit when time is over.</li>
+    <li>Contact for support: <a href="mailto:support@example.com" class="text-blue-500 underline">support@example.com</a></li>
+  </ul>
 </div>
 
+</div>
 
+<div class="max-w-3xl mx-auto py-10 px-4">
+  <h1 class="text-3xl font-bold text-center text-gray-800 mb-8"><%= exam.title %></h1>
 
-  <div class="max-w-3xl mx-auto py-10 px-4">
-    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8"><%= exam.title %></h1>
+  <!-- Start Form -->
+  <form id="startForm" class="bg-white shadow-md rounded-lg p-6 space-y-4">
+    <input id="name" name="name" placeholder="Name" required 
+           class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+    <input id="roll" name="roll" placeholder="Roll No" required
+           class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+    <button type="submit" 
+            class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+      Start Exam
+    </button>
+  </form>
 
-    <!-- Start Form -->
-    <form id="startForm" class="bg-white shadow-md rounded-lg p-6 space-y-4">
-      <input id="name" name="name" placeholder="Name" required 
-             class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <input id="roll" name="roll" placeholder="Roll No" required
-             class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <button type="submit" 
-              class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
-        Start Exam
-      </button>
-    </form>
-
-    <!-- Exam Container (Initially Hidden) -->
-    <div id="examContainer" class="mt-8" style="display:none">
-      <div id="statusBar" class="mb-4 text-gray-700 font-medium">
-        Time left: <span id="timeLeft"></span> | Warnings: <span id="warnings">0</span>
-      </div>
-      <div id="questions" class="space-y-6"></div>
-      <button id="submitBtn" 
-              class="mt-6 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors">
-        Submit
-      </button>
+  <!-- Exam Container (Initially Hidden) -->
+  <div id="examContainer" class="mt-8" style="display:none">
+    <div id="statusBar" class="mb-4 text-gray-700 font-medium">
+      Time left: <span id="timeLeft"></span> | Warnings: <span id="warnings">0</span>
     </div>
+    <div id="questions" class="space-y-6"></div>
+    <button id="submitBtn" 
+            class="mt-6 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors">
+      Submit
+    </button>
   </div>
+</div>
 
-  <script>
+<script>
+const exam = <%- JSON.stringify(exam) %>;
+const questions = <%- JSON.stringify(questions) %>;
 
+let secondsLeft, timer, warnings = 0, manualSubmitting = false;
 
+// Theme Button Logic
+const themeBtn = document.getElementById("themeBtn");
+const themePopup = document.getElementById("themePopup");
+const themeLink = document.getElementById("hljs-theme");
+themeBtn.onclick = () => themePopup.classList.toggle("hidden");
+document.querySelectorAll(".theme-btn").forEach(btn => {
+  btn.onclick = () => {
+    themeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${btn.dataset.theme}.min.css`;
+    hljs.highlightAll();
+    themePopup.classList.add("hidden");
+  };
+});
 
-    const exam = <%- JSON.stringify(exam) %>;
-    const questions = <%- JSON.stringify(questions) %>;
-  </script>
-  <script src="/exam-client.js"></script>
+// Instructions Button Logic
+const instrBtn = document.getElementById("instrBtn");
+const instrPopup = document.getElementById("instrPopup");
+instrBtn.onclick = () => instrPopup.classList.toggle("hidden");
 
+function escapeHTML(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
+function renderQuestions() {
+  const qDiv = document.getElementById("questions");
+  qDiv.innerHTML = "";
+  questions.forEach((q, i) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.innerHTML = `
+      <p><b>Q${i + 1}.</b></p>
+      <pre><code class="language-c">${escapeHTML(q.text)}</code></pre>
+    ` + q.choices.map((c, ci) => `<label><input type='radio' name='q${i}' value='${ci}'> ${c}</label><br>`).join("");
+    qDiv.appendChild(div);
+  });
+}
 
+function updateTimer() {
+  const t = document.getElementById("timeLeft");
+  const m = Math.floor(secondsLeft / 60);
+  const s = secondsLeft % 60;
+  t.textContent = `${m}:${s < 10 ? "0" : ""}${s}`;
+}
 
-  <!-- Highlight.js JS -->
+function startTimer() {
+  secondsLeft = exam.duration * 60;
+  updateTimer();
+  timer = setInterval(() => {
+    secondsLeft--;
+    updateTimer();
+    if (secondsLeft <= 0) submitExam("Time up");
+  }, 1000);
+}
+
+function collectAnswers() {
+  return questions.map((_, i) => {
+    const el = document.querySelector(`input[name=q${i}]:checked`);
+    return el ? parseInt(el.value) : null;
+  });
+}
+
+async function submitExam(reason) {
+  manualSubmitting = true;
+  clearInterval(timer);
+
+  // Show instructions + contact if auto-submit due to warnings
+  if (reason === "Too many warnings") {
+    instrPopup.classList.remove("hidden");
+    alert("3 Warnings! Exam auto-submitted. Please review the instructions.");
+  }
+
+  const body = new URLSearchParams({
+    name: document.getElementById("name").value,
+    roll: document.getElementById("roll").value,
+    answersJson: JSON.stringify(collectAnswers())
+  });
+
+  const r = await fetch(location.pathname + "/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Requested-With": "XMLHttpRequest" },
+    body
+  });
+
+  const d = await r.json();
+  if (d.ok) {
+    window.location.href = d.redirect;
+  } else {
+    alert("Submission failed! Please try again.");
+  }
+}
+
+function warn() {
+  if (manualSubmitting) return;
+  warnings++;
+  document.getElementById("warnings").textContent = warnings;
+  if (warnings >= 3) submitExam("Too many warnings");
+  else alert(`Warning ${warnings}/3: Stay in fullscreen`);
+}
+
+function startExam() {
+  document.getElementById("startForm").style.display = "none";
+  document.getElementById("examContainer").style.display = "block";
+  renderQuestions();
+  startTimer();
+  document.documentElement.requestFullscreen();
+}
+
+document.getElementById("startForm").onsubmit = e => {
+  e.preventDefault();
+  startExam();
+};
+
+document.addEventListener("visibilitychange", () => { if (!manualSubmitting && document.hidden) warn(); });
+document.addEventListener("fullscreenchange", () => { if (!manualSubmitting && !document.fullscreenElement) warn(); });
+document.getElementById("submitBtn").onclick = () => { manualSubmitting = true; submitExam("Manual submit"); };
+</script>
+
+<!-- Highlight.js JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<!-- (Optional) Load specific language support, e.g. C -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
 <script>hljs.highlightAll();</script>
 
