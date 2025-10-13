@@ -1,0 +1,63 @@
+<nav class="bg-gray-900 text-white shadow-md">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <!-- Logo -->
+      <div class="flex-shrink-0">
+        <a href="/">
+         <img class="h-10 w-auto" src="/public/images/c3-logo.jpg" alt="Creative coding community">
+
+        </a>
+      </div>
+
+      <!-- Links -->
+      <div class="hidden md:flex space-x-6 items-center">
+        <a href="/" class="hover:text-blue-400 font-semibold transition-colors">Home</a>
+        <a href="/" class="hover:text-blue-400 font-semibold transition-colors">Available Exams</a>
+        <a href="https://forms.gle/BBwaFz8xg1B9Mfzx7" target="_blank" class="hover:text-blue-400 font-semibold transition-colors">Register</a>
+        
+        <% if (isAdmin) { %>
+          <a href="/admin" class="hover:text-blue-400 font-semibold transition-colors">Admin</a>
+          <form method="post" action="/admin/logout" class="inline">
+            <button class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white transition-colors">Logout</button>
+          </form>
+        <% } else { %>
+          <a href="/admin/login" class="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded transition-colors">Admin Login</a>
+        <% } %>
+      </div>
+
+      <!-- Mobile menu button -->
+      <div class="md:hidden flex items-center">
+        <button id="mobile-menu-btn" class="text-white focus:outline-none">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden md:hidden bg-gray-800 px-2 pt-2 pb-3 space-y-1">
+    <a href="/" class="block px-3 py-2 rounded hover:bg-gray-700">Home</a>
+    <a href="/exams" class="block px-3 py-2 rounded hover:bg-gray-700">Available Exams</a>
+    <a href="https://forms.gle/BBwaFz8xg1B9Mfzx7" target="_blank" class="block px-3 py-2 rounded hover:bg-gray-700">Register</a>
+    
+    <% if (isAdmin) { %>
+      <a href="/admin" class="block px-3 py-2 rounded hover:bg-gray-700">Admin</a>
+      <form method="post" action="/admin/logout" class="block">
+        <button class="w-full text-left px-3 py-2 rounded bg-red-500 hover:bg-red-600">Logout</button>
+      </form>
+    <% } else { %>
+      <a href="/admin/login" class="block px-3 py-2 rounded bg-blue-500 hover:bg-blue-600">Admin Login</a>
+    <% } %>
+  </div>
+
+  <script>
+    const btn = document.getElementById('mobile-menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    btn.addEventListener('click', () => {
+      menu.classList.toggle('hidden');
+    });
+  </script>
+</nav>

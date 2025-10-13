@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head') %>
+<!-- Highlight.js CSS default -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-theme">
+
+<body class="bg-gray-100 min-h-screen font-sans">
+
+  <!-- Fixed Theme Button -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="themeBtn" 
+            class="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors shadow-lg">
+      Theme
+    </button>
+    <div id="themePopup" class="hidden mt-2 flex flex-wrap gap-2 p-2 bg-white shadow-lg rounded-lg w-48">
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#f5f5f5; border:1px solid #ccc;" data-theme="github"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#0d1117; border:1px solid #333;" data-theme="github-dark"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#282c34;" data-theme="atom-one-dark"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#fafafa; border:1px solid #ccc;" data-theme="atom-one-light"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#272822;" data-theme="monokai"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#282a36;" data-theme="dracula"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#002b36;" data-theme="solarized-dark"></button>
+      <button class="theme-btn w-8 h-8 rounded-full shadow" style="background:#fdf6e3; border:1px solid #ccc;" data-theme="solarized-light"></button>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto py-10 px-4">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">Exam: <%= result.exam.title %></h1>
+      <h2 class="text-xl text-gray-700 mt-2">User: <%= result.name %> (Roll: <%= result.roll %>)</h2>
+      <h3 class="text-lg text-gray-600 mt-1">Score: <span class="font-semibold"><%= result.score %> / <%= result.total %></span></h3>
+      <a href="/admin/results" class="text-blue-500 hover:underline mt-2 inline-block">← Back to all results</a>
+    </div>
+
+    <ul class="space-y-6">
+      <% questions.forEach((q, i) => { %>
+        <li class="bg-white shadow-md rounded-lg p-4">
+          <p class="font-semibold text-gray-800 mb-2">Q<%= i + 1 %>:</p>
+          <pre><code class="language-c"><%- q.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") %></code></pre>
+
+          <!-- Updated Answer Display Section with new wording -->
+          <ul class="pl-4 space-y-1 mt-2">
+            <% q.choices.forEach((c, ci) => { %>
+              <% 
+                const isUserAnswer = (ci === result.answers[i]);
+                const isCorrect = (ci === q.answerIndex);
+              %>
+              <li class="
+                <% if (isCorrect) { %>text-green-600 font-bold bg-green-50 p-1 rounded<% } %>
+                <% if (isUserAnswer && !isCorrect) { %>text-red-600 font-semibold bg-red-50 p-1 rounded<% } %>
+              ">
+                <% if (isUserAnswer && isCorrect) { %>
+                  ✔ Selected — Correct:
+                <% } else if (isUserAnswer && !isCorrect) { %>
+                  ✖ Selected — Incorrect:
+                <% } else if (isCorrect) { %>
+                  ✔ Correct Answer:
+                <% } %>
+                <%= c %>
+              </li>
+            <% }) %>
+          </ul>
+        </li>
+      <% }) %>
+    </ul>
+  </div>
+
+  <!-- Highlight.js JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+  <!-- Theme Button JS -->
+  <script>
+    const themeLink = document.getElementById("hljs-theme");
+    const themeBtn = document.getElementById("themeBtn");
+    const themePopup = document.getElementById("themePopup");
+    const themeButtons = document.querySelectorAll(".theme-btn");
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem("hljs-theme");
+    if(savedTheme) themeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${savedTheme}.min.css`;
+
+    // Toggle popup on main button click
+    themeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      themePopup.classList.toggle("hidden");
+    });
+
+    // Change theme on button click
+    themeButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const theme = btn.dataset.theme;
+        themeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${theme}.min.css`;
+        localStorage.setItem("hljs-theme", theme);
+        hljs.highlightAll();
+        themePopup.classList.add("hidden"); // close popup
+      });
+    });
+
+    // Close popup if clicked outside
+    document.body.addEventListener("click", () => {
+      themePopup.classList.add("hidden");
+    });
+  </script>
+
+</body>
+</html>
