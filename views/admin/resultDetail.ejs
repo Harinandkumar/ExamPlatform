@@ -38,8 +38,6 @@
           <p class="font-semibold text-gray-800 mb-2">Q<%= i + 1 %>:</p>
           <pre><code class="language-c"><%- q.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") %></code></pre>
 
-
-          <!-- Updated Answer Display Section with new wording -->
           <ul class="pl-4 space-y-1 mt-2">
             <% q.choices.forEach((c, ci) => { %>
               <% 
@@ -59,17 +57,9 @@
                 <% } %>
                 <%= c %>
               </li>
-
-          <ul class="pl-4 space-y-1 mt-2">
-            <% q.choices.forEach((c, ci) => { %>
-              <% if (ci === result.answers[i]) { %>
-                <li class="text-green-600 font-medium">✔ <%= c %></li>
-              <% } else { %>
-                <li class="text-gray-700"><%= c %></li>
-              <% } %>
-
             <% }) %>
           </ul>
+
         </li>
       <% }) %>
     </ul>
