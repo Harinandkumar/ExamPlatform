@@ -180,7 +180,7 @@ function warn() {
   if (manualSubmitting) return;
   warnings++;
   document.getElementById("warnings").textContent = warnings;
-  if (warnings >= 3) submitExam("Too many warnings");
+  if (warnings >= 4) submitExam("Too many warnings");
   else alert(`Warning ${warnings}/3: Stay in fullscreen`);
 }
 
