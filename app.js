@@ -3,21 +3,28 @@ const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose");
 const session = require("express-session");
+const MongoStore = require("connect-mongo"); // ✅ Added for safe session store
 const bodyParser = require("body-parser");
 const methodOverride = require("method-override");
 const flash = require("connect-flash");
 const morgan = require("morgan");
-const { Parser } = require("json2csv"); // CSV export
-
+const { Parser } = require("json2csv");
 require("dotenv").config();
 
 const app = express();
 
 // -------------------- MongoDB Connection --------------------
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/mcq_exam";
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+
+mongoose
+  .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("MongoDB Connection Error:", err));
+  .catch((err) => console.error("MongoDB Connection Error:", err));
+
+// Extra safeguard for runtime DB issues
+mongoose.connection.on("error", (err) => {
+  console.error("⚠️ MongoDB Runtime Error:", err);
+});
 
 // -------------------- Models --------------------
 const Exam = require("./models/exam");
@@ -29,13 +36,19 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(methodOverride("_method")); // For DELETE/PUT via POST
+app.use(methodOverride("_method"));
 app.use(morgan("dev"));
-app.use(session({
-  secret: process.env.SESSION_SECRET || "keyboard cat",
-  resave: false,
-  saveUninitialized: false,
-}));
+
+// ✅ MongoStore for scalable, persistent sessions
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "keyboard cat",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: MONGODB_URI }),
+  })
+);
+
 app.use(flash());
 
 // -------------------- Globals --------------------
@@ -55,14 +68,15 @@ function requireAdmin(req, res, next) {
 
 // -------------------- Routes --------------------
 
-// Home Page - List of exams
+// Home Page
 app.get("/", async (req, res) => {
   const exams = await Exam.find({});
   res.render("index", { exams });
 });
 
-// Admin Login/Logout
+// -------------------- Admin Login/Logout --------------------
 app.get("/admin/login", (req, res) => res.render("admin/login"));
+
 app.post("/admin/login", (req, res) => {
   if (req.body.password === process.env.ADMIN_PASSWORD) {
     req.session.isAdmin = true;
@@ -72,20 +86,28 @@ app.post("/admin/login", (req, res) => {
   req.flash("error", "Invalid password");
   res.redirect("/admin/login");
 });
+
 app.post("/admin/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
 
-// Admin Dashboard
+// -------------------- Admin Dashboard --------------------
 app.get("/admin", requireAdmin, async (req, res) => {
   const exams = await Exam.find({}).sort("-createdAt");
   res.render("admin/dashboard", { exams });
 });
 
 // Create Exam
-app.get("/admin/exams/new", requireAdmin, (req, res) => res.render("admin/newExam"));
+app.get("/admin/exams/new", requireAdmin, (req, res) =>
+  res.render("admin/newExam")
+);
+
 app.post("/admin/exams", requireAdmin, async (req, res) => {
-  const exam = new Exam({ title: req.body.title, duration: req.body.duration, isActive: false });
+  const exam = new Exam({
+    title: req.body.title,
+    duration: req.body.duration,
+    isActive: false,
+  });
   await exam.save();
   req.flash("success", "Exam created");
   res.redirect("/admin");
@@ -107,12 +129,13 @@ app.post("/admin/exams/:id/toggle", requireAdmin, async (req, res) => {
   res.redirect("/admin");
 });
 
-// Manage Questions
+// -------------------- Manage Questions --------------------
 app.get("/admin/exams/:id/questions", requireAdmin, async (req, res) => {
   const exam = await Exam.findById(req.params.id);
   const questions = await Question.find({ exam: req.params.id });
   res.render("admin/questions", { exam, questions });
 });
+
 app.post("/admin/exams/:id/questions", requireAdmin, async (req, res) => {
   const { text, choice1, choice2, choice3, choice4, answer } = req.body;
   const choices = [choice1, choice2, choice3, choice4];
@@ -120,26 +143,24 @@ app.post("/admin/exams/:id/questions", requireAdmin, async (req, res) => {
     exam: req.params.id,
     text,
     choices,
-    answerIndex: parseInt(answer) - 1
+    answerIndex: parseInt(answer) - 1,
   });
   await q.save();
   req.flash("success", "Question added successfully");
   res.redirect(`/admin/exams/${req.params.id}/questions`);
 });
+
 app.delete("/admin/questions/:qid", requireAdmin, async (req, res) => {
   await Question.findByIdAndDelete(req.params.qid);
   res.redirect("back");
 });
 
 // -------------------- Results --------------------
-
-// List Results
 app.get("/admin/results", requireAdmin, async (req, res) => {
   const results = await Result.find({}).populate("exam").sort("-submittedAt");
   res.render("admin/results", { results });
 });
 
-// Detailed Result View
 app.get("/admin/results/:id", requireAdmin, async (req, res) => {
   const result = await Result.findById(req.params.id).populate("exam");
   if (!result) {
@@ -150,7 +171,6 @@ app.get("/admin/results/:id", requireAdmin, async (req, res) => {
   res.render("admin/resultDetail", { result, questions });
 });
 
-// Delete a specific result
 app.delete("/admin/results/:id", requireAdmin, async (req, res) => {
   try {
     await Result.findByIdAndDelete(req.params.id);
@@ -167,17 +187,21 @@ app.delete("/admin/results/:id", requireAdmin, async (req, res) => {
 app.get("/admin/results/export", requireAdmin, async (req, res) => {
   try {
     const results = await Result.find({}).sort("-submittedAt");
-    const data = results.map(r => ({
+    const data = results.map((r) => ({
       Name: r.name,
       "Roll No": r.roll,
       Score: r.score,
-      Time: r.submittedAt.toLocaleString()
+      Time: new Date(r.submittedAt).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      }),
     }));
-    const json2csvParser = new Parser({ fields: ["Name", "Roll No", "Score", "Time"] });
+    const json2csvParser = new Parser({
+      fields: ["Name", "Roll No", "Score", "Time"],
+    });
     const csv = json2csvParser.parse(data);
     res.header("Content-Type", "text/csv");
     res.attachment("exam_results.csv");
-    return res.send(csv);
+    res.send(csv);
   } catch (err) {
     console.error("CSV export error:", err);
     res.status(500).send("Server error while exporting CSV.");
@@ -185,8 +209,6 @@ app.get("/admin/results/export", requireAdmin, async (req, res) => {
 });
 
 // -------------------- User Exam --------------------
-
-// Start Exam
 app.get("/exams/:id", async (req, res) => {
   const exam = await Exam.findById(req.params.id);
   if (!exam || !exam.isActive) return res.redirect("/");
@@ -194,30 +216,55 @@ app.get("/exams/:id", async (req, res) => {
   res.render("exam/start", { exam, questions });
 });
 
-// Submit Exam
+// ✅ Safe Submit Route (duplicate protection + error handling)
 app.post("/exams/:id/submit", async (req, res) => {
-  const questions = await Question.find({ exam: req.params.id });
-  const answers = JSON.parse(req.body.answersJson || "[]");
-  let score = 0;
-  questions.forEach((q, i) => {
-    if (answers[i] == q.answerIndex) score++;
-  });
-  const result = new Result({
-    exam: req.params.id,
-    name: req.body.name,
-    roll: req.body.roll,
-    answers,
-    score,
-    total: questions.length,
-    submittedAt: new Date()
-  });
-  await result.save();
+  try {
+    const questions = await Question.find({ exam: req.params.id });
+    const answers = JSON.parse(req.body.answersJson || "[]");
 
-  if (req.headers["x-requested-with"] === "XMLHttpRequest") {
-    return res.json({ ok: true, redirect: `/exams/${req.params.id}/thankyou` });
+    // Already submitted check
+    const already = await Result.findOne({
+      roll: req.body.roll,
+      exam: req.params.id,
+    });
+    if (already) {
+      return res.redirect(`/exams/${req.params.id}/thankyou`);
+    }
+
+    let score = 0;
+    questions.forEach((q, i) => {
+      if (answers[i] == q.answerIndex) score++;
+    });
+
+    const result = new Result({
+      exam: req.params.id,
+      name: req.body.name,
+      roll: req.body.roll,
+      answers,
+      score,
+      total: questions.length,
+      submittedAt: new Date(),
+    });
+    await result.save();
+
+    if (req.headers["x-requested-with"] === "XMLHttpRequest") {
+      return res.json({
+        ok: true,
+        redirect: `/exams/${req.params.id}/thankyou`,
+      });
+    }
+
+    res.redirect(`/exams/${req.params.id}/thankyou`);
+  } catch (err) {
+    console.error("❌ Error submitting exam:", err);
+    if (req.headers["x-requested-with"] === "XMLHttpRequest") {
+      return res
+        .status(500)
+        .json({ ok: false, error: "Server error. Please contact admin." });
+    }
+    req.flash("error", "Server error while submitting. Please contact admin.");
+    res.redirect(`/exams/${req.params.id}`);
   }
-
-  res.redirect(`/exams/${req.params.id}/thankyou`);
 });
 
 // Thank You Page
@@ -227,4 +274,6 @@ app.get("/exams/:id/thankyou", (req, res) => {
 
 // -------------------- Start Server --------------------
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);
